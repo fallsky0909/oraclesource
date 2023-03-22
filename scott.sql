@@ -967,7 +967,7 @@ SELECT
           0) avg_sal,
     MAX(sal) max_sal,
     MIN(sal) min_sal,
-    COUNT(*) AS CNT
+    COUNT(*) AS cnt
 FROM
     emp
 GROUP BY
@@ -984,9 +984,515 @@ FROM
 GROUP BY
     job
 HAVING
-    COUNT(JOB) >= 3;
+    COUNT(job) >= 3;
     
 -- 3)
-SELECT TO_CHAR(HIREDATE, 'YYYY') HIRE_YEAR, DEPTNO, COUNT(EMPNO) CNT
+SELECT
+    to_char(hiredate, 'YYYY') hire_year,
+    deptno,
+    COUNT(empno)              cnt
+FROM
+    emp
+GROUP BY
+    to_char(hiredate, 'YYYY'),
+    deptno;
+
+
+-- 조인 : 여러 테이블을 하나의 테이블처럼 사용
+-- 1) 내부조인(inner join) : 여러 개의 테이블에서 공통된 부분만 추출(교집합)
+--    -1. 등가조인 : 두개의 열이 일치할 때 값 추출
+--    -2. 비등가조인 : 범위에 해당할 때 값 추출
+-- 2) 외부조인(outer join)
+--    -1. left outer join : 좌측집합
+--    -2. right outer join : 우측집합
+--    -3. full outer join : 합집합
+
+-- dept : 4행, emp : 12행 => 4*12 = 48행
+-- 크로스 조인(나올 수 있는 모든 조합 추출)
+SELECT
+    *
+FROM
+    emp,
+    dept
+ORDER BY
+    empno;
+
+-- inner join
+-- ORA-00918: 열의 정의가 애매합니다("column ambiguously defined")
+-- 중복된 테이블이 있을 때(deptno가 emp 테이블, dept 테이블 둘다에 존재함)
+SELECT
+    e.empno,
+    e.ename,
+    d.deptno,
+    d.dname,
+    d.loc
+FROM
+    emp  e,
+    dept d
+WHERE
+        e.deptno = d.deptno
+    AND sal >= 3000;
+    
+-- SQL-99 표준
+-- join ~ on
+SELECT
+    e.empno,
+    e.ename,
+    d.deptno,
+    d.dname,
+    d.loc
+FROM
+         emp e
+    JOIN dept d ON e.deptno = d.deptno
+WHERE
+    sal >= 3000;
+
+-- emp, dept inner join급여가 2500이하 이고, 사원번호가 9999 이하인 사원 정보 조회
+SELECT
+    e.empno,
+    e.ename,
+    e.sal,
+    d.deptno,
+    d.dname,
+    d.loc
+FROM
+    emp  e,
+    dept d
+WHERE
+        e.deptno = d.deptno
+    AND sal >= 2500
+        AND e.empno <= 9999;
+        
+-- SQL-99 표준
+-- join ~ on   
+SELECT
+    e.empno,
+    e.ename,
+    e.sal,
+    d.deptno,
+    d.dname,
+    d.loc
+FROM
+         emp e
+    JOIN dept d ON e.deptno = d.deptno
+WHERE
+        sal >= 2500
+    AND e.empno <= 9999;
+-- emp와 salgrade 조인
+-- emp 테이블의 sal 이 salgrade 테이블의 losal과 hisal 범위에 들어가는 형태로 조인
+
+SELECT
+    *
+FROM
+    emp      e,
+    salgrade s
+WHERE
+    e.sal BETWEEN s.losal AND s.hisal;
+    
+-- SQL-99 표준
+-- join ~ on  
+SELECT
+    *
+FROM
+         emp e
+    JOIN salgrade s ON e.sal BETWEEN s.losal AND s.hisal;
+    
+
+-- self join : 자기 자신의 테이블과 조인 / null 값을 갖고 있는 king은 출력될 수 없음
+SELECT
+    e1.empno,
+    e1.ename,
+    e1.mgr,
+    e2.empno mgr_empno,
+    e2.ename mgr_ename
+FROM
+    emp e1,
+    emp e2
+WHERE
+    e1.mgr = e2.empno;
+
+-- outer join
+
+-- 1) left outer join (from의 첫번째가 왼쪽(left) 두번째가 오른쪽(right)
+SELECT
+    e1.empno,
+    e1.ename,
+    e1.mgr,
+    e2.empno mgr_empno,
+    e2.ename mgr_ename
+FROM
+    emp e1,
+    emp e2
+WHERE
+    e1.mgr = e2.empno (+);
+    
+-- SQL-99 표준
+-- join ~ on  
+SELECT
+    e1.empno,
+    e1.ename,
+    e1.mgr,
+    e2.empno mgr_empno,
+    e2.ename mgr_ename
+FROM
+    emp e1 left outer join emp e2 on e1.mgr = e2.empno;
+
+-- 2) right outer join
+SELECT
+    e1.empno,
+    e1.ename,
+    e1.mgr,
+    e2.empno mgr_empno,
+    e2.ename mgr_ename
+FROM
+    emp e1,
+    emp e2
+WHERE
+    e1.mgr (+) = e2.empno;
+    
+-- SQL-99 표준
+-- join ~ on  
+SELECT
+    e1.empno,
+    e1.ename,
+    e1.mgr,
+    e2.empno mgr_empno,
+    e2.ename mgr_ename
+FROM
+    emp e1 right outer
+JOIN emp e2 ON e1.mgr = e2.empno;
+
+
+-- 3) full outer join
+--ORA-01468: outer-join된 테이블은 1개만 지정할 수 있습니다("a predicate may reference only one outer-joined table")
+--select e1.empno, e1.ename, e1.mgr, e2.empno mgr_empno, e2.ename mgr_ename
+--from emp e1, emp e2
+--where e1.mgr(+) = e2.empno(+);
+
+-- SQL-99 표준
+-- join ~ on  
+select e1.empno, e1.ename, e1.mgr, e2.empno mgr_empno, e2.ename mgr_ename
+from emp e1 full outer
+JOIN emp e2 ON e1.mgr = e2.empno;
+
+-- 연결해야 할 테이블이 세개일 때
+--select *
+--from table t1, table t2, table t3
+--where t1.empno = t2.empno and t2.deptno = t3.deptno;
+--
+--select *
+--from table t1 join table t2 on t1.empno = t2.empno join table t3 on t2.deptno = t3.deptno;
+
+--[실습1]
+select d.deptno, d.dname, e.empno, e.ename, e.sal
+from dept d, emp e 
+where d.deptno = e.deptno
+and sal>2000;
+
+select d.deptno, d.dname, e.empno, e.ename, e.sal
+from dept d join emp e on d.deptno = e.deptno
+where sal>2000;
+
+--[실습2]
+select d.deptno, d.dname, trunc(avg(e.sal),0), max(e.sal), min(e.sal), count(*)
+from emp e join dept d on e.deptno = d.deptno
+group by d.deptno, d.dname; -- d.deptno 인 이유는 select에 e.deptno가 아니라 d.deptno가 있기 때문
+
+select d.deptno, d.dname, trunc(avg(e.sal),0), max(e.sal), min(e.sal), count(*)
+from emp e, dept d
+where e.deptno = d.deptno
+group by d.deptno, d.dname;
+
+--[실습3]
+select d.deptno, d.dname, e.empno, e.ename, e.job, e.sal
+from dept d left outer join emp e on d.deptno =
+e.deptno;
+
+SELECT
+    d.deptno,
+    d.dname,
+    e.empno,
+    e.ename,
+    e.job,
+    e.sal
+FROM
+    dept d,
+    emp  e
+WHERE
+    d.deptno = e.deptno (+)
+ORDER BY
+    d.deptno,
+    e.ename;
+
+-- 서브쿼리
+-- sql문을 실행하는 데 필요한 데이터를 추가로 조회하기 위해 sql문 내부에서 사용하는 select문
+-- 1) 단일행 서브쿼리 2) 다중행 서브쿼리 3) 다중열 서브쿼리
+-- =, >, <, >=, <=, <>, ^=, != 연산자 허용
+
+--select 조회할 열
+--from 테이블명
+--where 조건(select 조회할 열 from 테이블 where 조건식)
+
+-- 존스의 급여보다 높은 급여를 받는 사원 조회
+-- JONES 급여 알아내기 / 알아낸 JONES 급여를 가지고 조건식
+
+select sal
+from emp
+where ename = 'JONES'; -- 2975
+
+select *
+from emp
+where sal>2975;
+
+-- 단일행 서브쿼리 : 서브쿼리 결과로 하나의 행 반환
+-- 존스의 급여보다 높은 급여를 받는 사원 조회(서브쿼리)
+select *
+from emp
+where sal>(select sal from emp where ename='JONES');
+
+-- 사원이름이 ALLEN 인 사원의 추가수당보다 많은 추가수당을 받는 사원 조회
+SELECT *
 FROM EMP
-GROUP BY TO_CHAR(HIREDATE, 'YYYY'), DEPTNO;
+WHERE COMM > (SELECT COMM FROM EMP WHERE ENAME = 'ALLEN');
+
+-- 사원이름이 WARD 인 사원의 입사일보다 빨리 입사한 사원 조회
+SELECT *
+FROM EMP
+WHERE HIREDATE < (SELECT HIREDATE FROM EMP WHERE ENAME = 'WARD');
+
+--20번 부서에 속한 사원 중 전체 사원의 평균 급여보다 높은 급여를 받는 사원정보 및
+-- 부서정보 조회
+-- 사원번호, 사원명, 직무, 급여, 부서번호, 부서명, 지역
+
+SELECT e.empno, e.ename, e.job, e.sal, d.deptno, d.dname, d.loc
+from emp e join dept d on e.deptno = d.deptno
+where d.deptno = 20 and e.sal > (select avg(sal) from emp);
+
+--20번 부서에 속한 사원 중 전체 사원의 평균 급여보다 작거나 같은 급여를 받는 사원정보 및
+-- 부서정보 조회
+SELECT *
+from emp e join dept d on e.deptno = d.deptno
+where d.deptno = 20 and e.sal <= (select avg(sal) from emp);
+
+-- 다중행 서브쿼리 : 서브쿼리 결과로 여러개의 행 반환
+-- IN, ANY(SOME), ALL, EXISTS 연산자 허용(단일행 서브쿼리에 쓰는 연산자 사용 불가)
+
+-- 각 부서별 최고 급여와 동일한 급여를 받는 사원정보를 조회
+select max(sal)
+from emp e group by deptno;
+
+-- 단일 행 하위 질의에 2개 이상의 행이 리턴되었습니다.
+--select * from emp where sal = (select max(sal) from emp e group by deptno);
+
+-- IN : 메인쿼리 결과가 서브쿼리 결과 중 하나라도 일치하면 TRUE(기존 IN과 같은 개념)
+select * from emp where sal IN(select max(sal) from emp e group by deptno);
+
+-- 30번 부서 사원들의 최대 급여보다 적은 급여를 받는 사원 정보 조회
+
+-- ANY(SOME) : 메인쿼리 결과 서브쿼리 결과중 일부분이 일치하면 TRUE
+SELECT * FROM EMP WHERE SAL < ANY(SELECT SAL FROM EMP WHERE DEPTNO = 30);
+SELECT * FROM EMP WHERE SAL < SOME(SELECT SAL FROM EMP WHERE DEPTNO = 30);
+
+-- 위 결과는 단일행 쿼리로 작성이 가능한 상황임
+SELECT * FROM EMP WHERE SAL < (SELECT MAX(SAL) FROM EMP WHERE DEPTNO = 30);
+
+-- 30번 부서 사원들의 최소 급여보다 많은 급여를 받는 사원 정보 조회
+-- 단일행 쿼리
+SELECT * FROM EMP WHERE SAL > (SELECT MIN(SAL) FROM EMP WHERE DEPTNO = 30);
+-- 다중행 쿼리
+SELECT
+    *
+FROM
+    emp
+WHERE
+    sal > ANY (
+        SELECT
+            sal
+        FROM
+            emp
+        WHERE
+            deptno = 30
+    );
+
+-- ALL : 서브쿼리의 모든 결과가 조건식에 맞아 떨어져야만 메인쿼리 조건식이 TRUE
+SELECT
+    *
+FROM
+    emp
+WHERE
+    sal < ALL (
+        SELECT
+            sal
+        FROM
+            emp
+        WHERE
+            deptno = 30
+    );
+
+-- EXISTS : 서브쿼리의 결과 값이 하나 이상 존재하면 조건식이 모두 TRUE, 존재하지 않으면 FALSE
+SELECT
+    *
+FROM
+    emp
+WHERE
+    EXISTS (
+        SELECT
+            dname
+        FROM
+            dept
+        WHERE
+            deptno = 10
+    );
+
+SELECT
+    *
+FROM
+    emp
+WHERE
+    EXISTS (
+        SELECT
+            dname
+        FROM
+            dept
+        WHERE
+            deptno = 50
+    );
+
+--[실습1]
+SELECT
+    e.job,
+    e.empno,
+    e.ename,
+    e.sal,
+    d.deptno,
+    d.dname
+FROM
+    emp  e,
+    dept d
+WHERE
+        e.deptno = d.deptno
+    AND e.job = (
+        SELECT
+            job
+        FROM
+            emp
+        WHERE
+            ename = 'ALLEN'
+    );
+
+--[실습2]
+SELECT
+    e.empno,
+    e.ename,
+    d.dname,
+    e.hiredate,
+    d.loc,
+    e.sal,
+    s.grade
+FROM
+    emp      e,
+    dept     d,
+    salgrade s
+WHERE
+        e.deptno = d.deptno
+    AND e.sal BETWEEN s.losal AND s.hisal
+        AND e.sal > (
+        SELECT
+            AVG(sal)
+        FROM
+            emp
+    )
+ORDER BY
+    e.sal DESC,
+    e.empno;
+
+-- 다중열 서브쿼리 : 서브쿼리의 select 절에 비교할 데이터를 여러개 지정
+SELECT
+    *
+FROM
+    emp
+WHERE
+    ( deptno, sal ) IN (
+        SELECT
+            deptno, MAX(sal)
+        FROM
+            emp
+        GROUP BY
+            deptno
+    );
+
+-- from 절에 사용하는 서브쿼리(인라인 뷰)
+SELECT
+    e10.empno,
+    e10.ename,
+    e10.deptno,
+    d.dname,
+    d.loc
+FROM
+    (
+        SELECT
+            *
+        FROM
+            emp
+        WHERE
+            deptno = 10
+    ) e10,
+    (
+        SELECT
+            *
+        FROM
+            dept
+    ) d
+WHERE
+    e10.deptno = d.deptno;
+    
+-- select 절에 사용하는 서브쿼리(스칼라 서브쿼리)
+-- select 절에 사용하는 서브쿼리는 반드시 하나의 결과만 반환해야 함
+select empno, ename, job, sal,(select grade from salgrade where e.sal between losal and hisal) as salgrade,
+deptno,
+(
+    SELECT
+        dname
+    FROM
+        dept
+    WHERE
+        e.deptno = dept.deptno
+) AS dname
+from emp e;
+
+
+--[실습1]
+select e.empno, e.ename, e.job, d.deptno, d.dname, d.loc
+from emp e, dept d
+where e.deptno = d.deptno and E.deptno = 10 and job NOT in(select job from emp where deptno = 30);
+
+--[실습2]
+-- 단일행(스칼라 서브쿼리)
+select E.EMPNO, E.ENAME, E.SAL, (SELECT GRADE FROM SALGRADE WHERE E.SAL BETWEEN LOSAL AND HISAL) GRADE
+from emp e
+where e.sal > (select max(sal) from emp where job = 'SALESMAN')
+ORDER BY E.EMPNO;
+
+--단일행
+select *
+from emp e, salgrade s
+where e.sal between S.losal and S.hisal and sal > (
+    SELECT
+        MAX(sal)
+    FROM
+        emp
+    WHERE
+        job = 'SALESMAN'
+);
+
+--다중행 함수 사용시(IN, ANY, SOME, ALL, EXISTS)
+select *
+from emp e, salgrade s
+where e.sal between S.losal and S.hisal and E.sal > ALL (
+    SELECT
+        sal
+    FROM
+        emp
+    WHERE
+        job = 'SALESMAN'
+);
