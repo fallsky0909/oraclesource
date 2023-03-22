@@ -1472,7 +1472,6 @@ select E.EMPNO, E.ENAME, E.SAL, (SELECT GRADE FROM SALGRADE WHERE E.SAL BETWEEN 
 from emp e
 where e.sal > (select max(sal) from emp where job = 'SALESMAN')
 ORDER BY E.EMPNO;
-
 --단일행
 select *
 from emp e, salgrade s
