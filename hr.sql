@@ -386,7 +386,7 @@ WHERE
 -- LAST_NAME 에 u가 포함된 사원들과 동일 부서에 근무하는 사원들의 사번, LAST_NAME 조회
 SELECT EMPLOYEE_ID, LAST_NAME
 FROM EMPLOYEES
-where DEPARTMENT_ID IN (select DEPARTMENT_ID from EMPLOYEES where last_name like '%u%');
+where DEPARTMENT_ID IN (select distinct DEPARTMENT_ID from EMPLOYEES where last_name like '%u%');
 
 -- JOB_ID 가 SA_MAN 인 사원들의 최대 연봉보다 높게 받는 사원들의 LAST_NAME, JOB_ID, SALARY 조회
 SELECT LAST_NAME, JOB_ID, SALARY
@@ -398,15 +398,27 @@ SELECT D.department_name, e.LAST_NAME, e.DEPARTMENT_ID, e.SALARY
 FROM EMPLOYEES e, departments d
 WHERE e.department_id = d.department_id and SALARY IN (SELECT SALARY FROM EMPLOYEES WHERE COMMISSION_PCT IS NOT NULL);
 
+--정답
+select last_name, department_id, salary, commission_pct
+from employees
+where (department_id, salary)
+in (select department_id, salary from employees where commission_pct>0);
+
 -- 회사 전체 평균 연봉보다 더 받는 사원들 중 LAST_NAME에 u가 있는 사원들이 근무하는 부서에서 근무하는 사원들의 EMPLOYEE_ID, LAST_NAME, SALARY 조회
 SELECT e10.EMPLOYEE_ID, e10.LAST_NAME, e10.SALARY
 FROM (select * from employees where last_name like '%u%') e10
 WHERE salary > (select avg(salary) from employees);
 
+--정답
+select employee_id, last_name, salary
+from (select distinct department_id from employees where salary > (select round(avg(salary),0) from employees) and last_name like '%u%') dept, employees e
+where e.department_id=dept.department_id
+order by employee_id;
+
 -- LAST_NAME이 Davies 인 사람보다 나중에 고용된 사원들의 last_name, hire_date 조회
 select last_name, hire_date
 from employees
-where hire_date < (select hire_date from employees where last_name = 'Davies');
+where hire_date > (select hire_date from employees where last_name = 'Davies');
 
 -- last_name이 King인 사원을 매니저로 두고 있는 모든 사원들의 last_name, salary 조회
 select last_name, salary
