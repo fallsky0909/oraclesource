@@ -2449,7 +2449,7 @@ DELETE FROM DEPT_FK2 WHERE DEPTNO=10;
 -- 비밀번호는 3자리보다 커야한다.
 CREATE TABLE table_CHECK (
     login_id  VARCHAR2(20) PRIMARY KEY,
-    login_pwd VARCHAR2(20) CHECK(LENGTH(LOGIN_PWD > 3)),
+    login_pwd VARCHAR2(20) CHECK (LENGTH(LOGIN_PWD > 3)),
     tel       VARCHAR2(20)
 );
 --체크 제약조건이 위배
